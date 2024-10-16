@@ -1,11 +1,13 @@
 {
   "expo": {
-    "name": "react-native-app-1",
-    "slug": "react-native-app-1",
+    "name": "cric-app",
+    "slug": "cric-app-alpha",
     "version": "1.0.0",
     "assetBundlePatterns": [
       "**/*"
-    ]
-  },
-  "name": "react-native-app-1"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
 }

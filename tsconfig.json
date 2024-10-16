@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "extends": "expo/tsconfig.base",
+  "include": [
+    "src",
+    ".eslintrc.js",
+    "babel.config.ts",
+    "metro.config.ts",
+    "index.js"
+  ]
+}
