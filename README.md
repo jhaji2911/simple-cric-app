@@ -52,3 +52,15 @@ This app **fully meets** the requirements outlined in the project specifications
 - Real-time updates as users type 🖊️
 - Ability to switch between test and server data with a sleek switch toggle 🔄
 - Further enhancements (React Query, MMKV Storage, Zustand for state management) can be used to make the app more robust.
+
+
+## 🔄 Updates
+
+Here are the recent updates we made to the app:
+- Type Error Fixes:
+- Fixed all type errors across the codebase, ensuring everything runs smoothly with TypeScript.
+- Improved Theme Management:
+- Enhanced the data-fetching logic to switch between Test and Server data seamlessly without any lag.
+- Added Country Deletion Feature:
+- Button & Input Enhancements:
+- Made minor tweaks to button and input components for better usability and aesthetics.
