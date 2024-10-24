@@ -1,73 +1,101 @@
 import constants from '@/utils/constants';
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, StyleSheet, Text } from 'react-native';
-import { Switch, useTheme } from 'react-native-paper';
-import { CountryScoreRow } from '@/components/molecules';
-import { fetchCricketScores } from '@/services/cricketService';
+import { ScrollView, View, StyleSheet } from 'react-native';
+import { Switch, Text, useTheme, Button } from 'react-native-paper';
+import { CountryScoreRow } from 'src/components/molecules';
+import { fetchCricketScores } from 'src/services/cricketService';
 
 const ScoreList: React.FC = () => {
 	const [data, setData] = useState<[string, number][]>(
 		constants.testData as [string, number][],
 	);
 	const [source, setSource] = useState<'Test' | 'Server'>('Test');
-	const [input, setInput] = useState<string>('');
-	const [average, setAverage] = useState<number | null>(null);
-	const [isServerData, setIsServerData] = useState<boolean>(false); // Added state for Switch
+	const [countries, setCountries] = useState([
+		{ name: '', average: null, valid: false },
+	]);
+
 	const { colors } = useTheme();
 
 	useEffect(() => {
-		// Fetch data from the server if the source is set to 'Server'
 		if (source === 'Server') {
-			void fetchCricketScores()
-				.then(fetchedData => {
-					// Ensure the fetched data is formatted as [string, number][]
-					const formattedData = fetchedData.map(
-						([country, score]: [string, number]) =>
-							[country, score] as [string, number],
-					);
-					setData(formattedData);
-				})
-				.catch(error => {
-					console.error('Error fetching scores:', error);
-					// Optionally, handle error by setting a default state or showing a message
-				});
+			void fetchCricketScores().then((fetchedData: [string, number][]) => {
+				// type matching some one's gotta do it
+				const formattedData = fetchedData.map(
+					([country, score]: [string, number]) =>
+						[country, score] as [string, number],
+				);
+				setData(formattedData);
+			});
 		} else {
-			// @ts-expect-error there is type mismatch, we will deal with it later
-			setData(constants.testData as [string, number[]]); // Set to test data if not fetching from server
+			setData(constants.testData as [string, number][]);
 		}
 	}, [source]);
 
-	useEffect(() => {
-		// Calculate the average score based on the input country
-		const scores = data.filter(
-			([country]) => country.toLowerCase() === input.toLowerCase(),
+	const handleInputChange = (index: number, name: string) => {
+		const updatedCountries = [...countries];
+		const matchingScores = data.filter(
+			([country]) => country.toLowerCase() === name.toLowerCase(),
 		);
-		if (scores.length) {
-			const avg =
-				scores.reduce((sum, [, score]) => sum + score, 0) / scores.length;
-			setAverage(avg);
-		} else {
-			setAverage(null);
-		}
-	}, [input, data]);
 
-	// Toggle function for the Switch
+		// Update the name
+		updatedCountries[index].name = name;
+
+		if (matchingScores.length) {
+			// Exact match found, calculate average
+			const avg =
+				matchingScores.reduce((sum, [, score]) => sum + score, 0) /
+				matchingScores.length;
+			updatedCountries[index].average = avg;
+			updatedCountries[index].valid = true;
+		} else {
+			// No exact match, display "-", like the problem said ✨
+			updatedCountries[index].average = null;
+			updatedCountries[index].valid = false;
+		}
+
+		setCountries(updatedCountries);
+	};
+
+	const handleDelete = (countryIndex: number) => {
+		const updatedValue = countries.filter((_, index) => index !== countryIndex);
+		setCountries(updatedValue);
+	};
+
+	const addCountryRow = () => {
+		setCountries([...countries, { name: '', average: null, valid: false }]);
+	};
+
 	const handleToggleSwitch = () => {
-		setIsServerData(prevState => !prevState);
-		setSource(prevState => (prevState === 'Test' ? 'Server' : 'Test')); // Switch data source
+		setSource(prev => (prev === 'Test' ? 'Server' : 'Test'));
 	};
 
 	return (
 		<ScrollView style={styles.container}>
 			<View style={styles.switchContainer}>
-				<Text>Data Source: {isServerData ? 'Server Data' : 'Test Data'}</Text>
+				<Text>
+					Data Source: {source === 'Server' ? 'Server Data' : 'Test Data'}
+				</Text>
 				<Switch
-					value={isServerData}
+					value={source === 'Server'}
 					onValueChange={handleToggleSwitch}
-					color={colors.primary} // Customize the switch color
+					color={colors.primary}
 				/>
 			</View>
-			<CountryScoreRow country={input} score={average} onChange={setInput} />
+
+			{countries.map((country, index) => (
+				<CountryScoreRow
+					key={index}
+					isFirst={index === 0}
+					country={country.name}
+					score={country.average}
+					valid={country.valid}
+					onChange={name => handleInputChange(index, name)}
+					onDelete={() => handleDelete(index)}
+				/>
+			))}
+			<Button icon="plus" mode="contained" onPress={addCountryRow}>
+				Add Country
+			</Button>
 		</ScrollView>
 	);
 };
@@ -80,7 +108,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		marginVertical: 20,
+		marginBottom: 16,
 	},
 });
 

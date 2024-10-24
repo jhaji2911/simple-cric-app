@@ -1,60 +1,144 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import { AppLabel, AppBar, AppInput } from '@/components/atoms';
+import React, { useEffect, useRef } from 'react';
+import {
+	View,
+	Text,
+	TextInput,
+	StyleSheet,
+	useWindowDimensions,
+	Animated,
+	Easing,
+	TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
 
 interface CountryScoreRowProps {
 	country: string;
 	score: number | null;
-	onChange: (value: string) => void;
+	valid: boolean;
+	onChange: (name: string) => void;
+	onDelete: () => void;
+	isFirst: boolean;
 }
+
+const MAX_SCORE = 100; // MAXXING on scores
 
 const CountryScoreRow: React.FC<CountryScoreRowProps> = ({
 	country,
 	score,
+	valid,
 	onChange,
+	onDelete,
+	isFirst,
 }) => {
-	const [isWideScreen, setIsWideScreen] = useState(
-		Dimensions.get('window').width >= 600,
-	);
+	const { width } = useWindowDimensions();
+	const isWideScreen = width > 600;
+	const { colors } = useTheme();
 
-	// Listener for screen size changes
+	const barWidth = useRef(new Animated.Value(0)).current;
+
+	// Resetting the bar to let it mount
 	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(Dimensions.get('window').width >= 600);
-		};
-
-		const subscription = Dimensions.addEventListener('change', handleResize);
-		return () => subscription.remove(); // Cleanup on unmount
+		barWidth.setValue(0);
 	}, []);
 
+	// Just animate already
+	useEffect(() => {
+		const targetWidth =
+			score !== null && valid ? (score / MAX_SCORE) * (width - 80) : 0;
+
+		Animated.timing(barWidth, {
+			toValue: targetWidth,
+			duration: 500,
+			easing: Easing.out(Easing.exp),
+			useNativeDriver: false, // native driver, 🌝
+		}).start();
+	}, [score, valid, width]);
+
+	const displayScore =
+		score !== null && !Number.isNaN(score) ? score.toFixed(2) : '-';
+
 	return (
-		<View style={[styles.container, isWideScreen ? styles.row : styles.column]}>
-			<AppInput
-				value={country}
-				onChange={onChange}
-				placeholder="Enter country name"
-			/>
-			<AppLabel text={`Average: ${score ?? '-'}`} />
-			{score !== null && <AppBar width={score * 2} />}
+		<View
+			style={[styles.row, isWideScreen ? styles.rowWide : styles.rowNarrow]}
+		>
+			<View style={styles.inputContainer}>
+				<TextInput
+					style={styles.input}
+					value={country}
+					placeholder="Enter Country"
+					onChangeText={onChange}
+					placeholderTextColor="#aaa"
+				/>
+				{!isFirst && (
+					<TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+						{/* @ts-expect-error we will have to define type for accent */}
+						<Ionicons name="trash-outline" size={24} color={colors.accent} />
+					</TouchableOpacity>
+				)}
+			</View>
+
+			<View style={styles.scoreContainer}>
+				<Text style={styles.score}>{displayScore}</Text>
+				<Animated.View style={[styles.bar, { width: barWidth }]} />
+			</View>
 		</View>
 	);
 };
 
 const styles = StyleSheet.create({
-	container: {
-		marginVertical: 10,
-		padding: 10,
-		borderWidth: 1,
-		borderRadius: 4,
-	},
 	row: {
-		flexDirection: 'row',
+		marginBottom: 20,
 		alignItems: 'center',
-		justifyContent: 'space-between',
 	},
-	column: {
+	rowWide: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+	},
+	rowNarrow: {
 		flexDirection: 'column',
 		alignItems: 'flex-start',
+	},
+	inputContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		width: '100%',
+		marginBottom: 8,
+	},
+	input: {
+		flex: 1,
+		// TODO: maybe we could have imported it from theme, but it doesn't supports for now
+		borderColor: '#1E90FF',
+		borderWidth: 1.5,
+		borderRadius: 8,
+		padding: 12,
+		fontSize: 16,
+		color: '#333',
+		backgroundColor: '#F9F9F9',
+	},
+	deleteButton: {
+		marginLeft: 8,
+		padding: 4,
+	},
+	scoreContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		width: '100%',
+		marginTop: 4,
+	},
+	score: {
+		width: 60,
+		textAlign: 'right',
+		fontSize: 18,
+		color: '#1E90FF',
+		fontWeight: '600',
+		marginRight: 8,
+	},
+	bar: {
+		height: 12,
+		backgroundColor: '#1E90FF',
+		borderRadius: 6,
 	},
 });
 
